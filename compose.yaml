@@ -1,0 +1,6 @@
+﻿services:
+  repproc4replenit:
+    image: repproc4replenit
+    build:
+      context: .
+      dockerfile: Dockerfile

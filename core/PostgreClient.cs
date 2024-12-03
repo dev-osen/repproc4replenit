@@ -1,6 +1,6 @@
 namespace RepProc4Replenit.Core;
 
-public static class FileUtility
+public static class PostgreClient
 {
     
 }

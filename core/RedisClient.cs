@@ -6,17 +6,26 @@ using DotNetEnv;
 
 namespace RepProc4Replenit.Core;
 
+
+public enum RedisDataTypesEnum
+{
+    PreData = 1,
+    Product = 2,
+    Customer = 3,
+    Combine = 4
+}
+
 public class RedisClient : IDisposable
 {
-    private readonly ConnectionMultiplexer RedisConnection;
-    private readonly IDatabase RedisDatabase;
+    public readonly ConnectionMultiplexer RedisConnection;
+    public readonly IDatabase RedisDatabase;
 
-    public RedisClient()
+    public RedisClient(RedisDataTypesEnum redisType)
     { 
         string host = Env.GetString("REDIS_HOST");
         string port = Env.GetString("REDIS_PORT");
         string password = Env.GetString("REDIS_PASSWORD");
-        int database = 0;
+        int database = (int)redisType;
 
         var connectionString = $"{host}:{port},password={password}";
 
@@ -56,11 +65,32 @@ public class RedisClient : IDisposable
     
     public async Task<long> ListRightPushAsync(string listKey, string value) => await RedisDatabase.ListRightPushAsync(listKey, value);
     
+    public async Task ListRightPushAsync(string listKey, List<string> data)
+    {   
+        IBatch batch = RedisDatabase.CreateBatch();
+        foreach (var item in data)
+            await batch.ListRightPushAsync(listKey, item);
+        
+        batch.Execute();
+    }
+    
     public async Task<string?> ListLeftPopAsync(string listKey)
     {
         var value = await RedisDatabase.ListLeftPopAsync(listKey);
         return value.HasValue ? value.ToString() : null;
     }
+    
+    public async Task<List<string>> GetList(string listKey, int pageIndex, int pageSize)
+    { 
+        long start = pageIndex * pageSize;
+        long end = start + pageSize - 1;
+
+        var result = await RedisDatabase.ListRangeAsync(listKey, start, end);
+        return result.Select(x => x.ToString()).ToList();
+    }
+    
+    
+    
 
     public async Task<bool> SetAddAsync(string setKey, string value) => await RedisDatabase.SetAddAsync(setKey, value);
     
