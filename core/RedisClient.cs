@@ -12,7 +12,8 @@ public enum RedisDataTypesEnum
     PreData = 1,
     Product = 2,
     Customer = 3,
-    Combine = 4
+    Combine = 4,
+    DataKey = 5,
 }
 
 public class RedisClient : IDisposable

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("RepProc4Replenit")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+166230e24f6c6aba69c28cff6a1bdd0cc313f25f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+faaa94d68eed7f2bd4bae2042929b4c901d48833")]
 [assembly: System.Reflection.AssemblyProductAttribute("RepProc4Replenit")]
 [assembly: System.Reflection.AssemblyTitleAttribute("RepProc4Replenit")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

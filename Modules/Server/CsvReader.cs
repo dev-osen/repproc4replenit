@@ -2,11 +2,11 @@ using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.IO.MemoryMappedFiles;
 using System.Text;
-using RepProc4Replenit.Modules.Runtime;
+using RepProc4Replenit.Core;
 using RepProc4Replenit.Objects;
 using StackExchange.Redis;
 
-namespace RepProc4Replenit.Core;
+namespace RepProc4Replenit.Modules.Server;
 
 public class CsvReader: IDisposable
 {

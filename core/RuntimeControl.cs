@@ -1,7 +1,8 @@
+using System.Data;
 using DotNetEnv;
-using RepProc4Replenit.Core;
+using Npgsql;
 
-namespace RepProc4Replenit.Modules.Runtime;
+namespace RepProc4Replenit.Core;
 
 public static class RuntimeControl
 {
@@ -9,12 +10,16 @@ public static class RuntimeControl
     public static RedisClient RedisProduct { get; set; }
     public static RedisClient RedisCustomer { get; set; }
     public static RedisClient RedisCombine { get; set; }
+    public static RedisClient RedisDataKey { get; set; }
+    
+    
+    public static NpgsqlConnection PostgreConnection { get; set; }
     
     
     public static string WorkerChannelName { get; set; }
     public static int WorkerMaxLineCount { get; set; }
 
-    public static void Load()
+    public static async Task Load()
     {
         Env.Load();
 
@@ -22,9 +27,12 @@ public static class RuntimeControl
         RuntimeControl.WorkerMaxLineCount = Env.GetInt("WORKER_MAX_LINE_COUNT");
         
         RuntimeControl.RedisPreData = new RedisClient(RedisDataTypesEnum.PreData);
-        RuntimeControl.RedisProduct = new RedisClient(RedisDataTypesEnum.PreData);
-        RuntimeControl.RedisCustomer = new RedisClient(RedisDataTypesEnum.PreData);
-        RuntimeControl.RedisCombine = new RedisClient(RedisDataTypesEnum.PreData);
+        RuntimeControl.RedisProduct = new RedisClient(RedisDataTypesEnum.Product);
+        RuntimeControl.RedisCustomer = new RedisClient(RedisDataTypesEnum.Customer);
+        RuntimeControl.RedisCombine = new RedisClient(RedisDataTypesEnum.Combine);
+        RuntimeControl.RedisDataKey = new RedisClient(RedisDataTypesEnum.DataKey);
+
+        RuntimeControl.PostgreConnection = await PostgreClient.Connection();
 
         KafkaClient.TopicChecker(new List<string>() { RuntimeControl.WorkerChannelName }, 50).Wait();
     }

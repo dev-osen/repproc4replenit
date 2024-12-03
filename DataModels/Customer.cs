@@ -1,7 +1,8 @@
-namespace RepProc4Replenit.Objects;
+namespace RepProc4Replenit.DataModels;
 
-public class CustomerItem
+public class Customer
 {
+    public int Id { get; set; }
     public long DbRowId { get; set; }
     public long ProductId { get; set; }
     public int Quantity { get; set; }
