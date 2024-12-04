@@ -1,0 +1,32 @@
+version: "3"
+
+services:  
+  postgres:
+    container_name: replenit-postgres
+    image: postgres
+    environment:
+      - POSTGRES_USER=rppc4rplnt_usr
+      - POSTGRES_PASSWORD=yxJ86d3c454uY4mGCnUkWVMae
+      - POSTGRES_DB=replenishment_db
+    restart: unless-stopped
+    volumes:
+      - /var/projects/others/repproc4replenit/configs:/var/lib/postgresql/data
+    ports:
+      - 3534:5432
+    networks:
+      local:
+        ipv4_address: 10.111.3.4
+ 
+
+volumes:
+  postgres-data:
+    driver: local
+
+
+networks:
+  local:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.111.3.0/24
+          gateway: 10.111.3.1

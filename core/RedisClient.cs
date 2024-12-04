@@ -18,7 +18,8 @@ public enum RedisDataTypesEnum
     TransactionRaw = 7,
     Product = 8,
     ProductList = 9,
-    TaskError = 10
+    TaskError = 10,
+    Log = 11,
 }
 
 public class RedisClient : IDisposable

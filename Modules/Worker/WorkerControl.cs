@@ -12,8 +12,12 @@ namespace RepProc4Replenit.Modules.Worker;
 
 public static class WorkerControl
 { 
+    public static string ConsumerKey = Guid.NewGuid().ToString("N");
+    
     public static void Run()
     { 
+        LoggerService.StartConsumer(ConsumerKey);
+        
         var cts = new CancellationTokenSource(); 
         Console.CancelKeyPress += (sender, eventArgs) =>
         { 
@@ -53,12 +57,12 @@ public static class WorkerControl
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Consumer error: {e.Message}");
+            LoggerService.Send($"Consumer error: {e.Message}");
         }
         finally
         {
             consumer.Close();  
-            Console.WriteLine("Consumer stopped!");
+            LoggerService.Send("Consumer stopped!");
         }
     } 
     

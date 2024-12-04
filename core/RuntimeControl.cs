@@ -19,6 +19,7 @@ public static class RuntimeControl
     public static RedisClient RedisProduct { get; set; }
     public static RedisClient RedisProductList { get; set; }
     public static RedisClient RedisTaskError { get; set; }
+    public static RedisClient RedisLog { get; set; }
     
     
     public static NpgsqlConnection PostgreConnection { get; set; }
@@ -43,6 +44,7 @@ public static class RuntimeControl
         RuntimeControl.RedisProduct = new RedisClient(RedisDataTypesEnum.Product);
         RuntimeControl.RedisProductList = new RedisClient(RedisDataTypesEnum.ProductList);
         RuntimeControl.RedisTaskError = new RedisClient(RedisDataTypesEnum.TaskError);
+        RuntimeControl.RedisLog = new RedisClient(RedisDataTypesEnum.Log);
 
         RuntimeControl.PostgreConnection = await PostgreClient.Connection();
 

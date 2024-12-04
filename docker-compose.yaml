@@ -1,0 +1,37 @@
+version: '3.9'
+services:
+  
+  consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: replenit-consumer-app
+    volumes:
+      - /var/projects/others/repproc4replenit/program:/app  
+    environment:
+      - DOTNET_USE_POLLING_FILE_WATCHER=1 
+    restart: always 
+  
+  
+    # /// Consumer docker ile kalkar ve surekli calisir
+    # docker-compose up -d consumer
+
+
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: remplenit-server-app
+    volumes:
+      - /var/projects/others/repproc4replenit/program:/app
+    working_dir: /app
+    stdin_open: true       
+    tty: true             
+    command: ["sleep", "infinity"]
+    
+    
+    # /// Server sadece calisma oldugunda kullanilir
+    # docker-compose up -d server
+    # docker exec -it remplenit-server-app bash
+    # dotnet RepProc4Replenit.dll --example.txt

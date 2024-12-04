@@ -9,21 +9,13 @@ public static class KafkaClient
     public static ProducerConfig ProducerConfig =>
         new ProducerConfig
         {
-            BootstrapServers = $"{Env.GetString("KAFKA_HOST")}:{Env.GetString("KAFKA_PORT")}",
-            SecurityProtocol = SecurityProtocol.SaslPlaintext,
-            SaslMechanism = SaslMechanism.ScramSha512, 
-            SaslUsername = Env.GetString("KAFKA_USER"),
-            SaslPassword = Env.GetString("KAFKA_PASS"),
+            BootstrapServers = $"{Env.GetString("KAFKA_HOST")}:{Env.GetString("KAFKA_PORT")}"
         };
     
     public static ConsumerConfig ConsumerConfig() => 
         new ConsumerConfig
         {
             BootstrapServers = $"{Env.GetString("KAFKA_HOST")}:{Env.GetString("KAFKA_PORT")}",
-            SecurityProtocol = SecurityProtocol.SaslPlaintext,
-            SaslMechanism = SaslMechanism.ScramSha512, 
-            SaslUsername = Env.GetString("KAFKA_USER"),
-            SaslPassword = Env.GetString("KAFKA_USER"),
             GroupId = $"task-worker-{DateTime.Now.Ticks}", 
             AutoOffsetReset = AutoOffsetReset.Earliest
         };
@@ -31,10 +23,6 @@ public static class KafkaClient
     public static AdminClientConfig AdminClientConfig => new AdminClientConfig
     {
         BootstrapServers = $"{Env.GetString("KAFKA_HOST")}:{Env.GetString("KAFKA_PORT")}",
-        SaslMechanism = SaslMechanism.ScramSha256,
-        SecurityProtocol = SecurityProtocol.SaslPlaintext,
-        SaslUsername = Env.GetString("KAFKA_USER"),
-        SaslPassword = Env.GetString("KAFKA_USER"),
     };
 
 
@@ -62,11 +50,11 @@ public static class KafkaClient
         }
         catch (CreateTopicsException e)
         {
-            Console.WriteLine($"Topic oluşturulurken hata: {e.Results[0].Error.Reason}");
+            Console.WriteLine($"[ERROR]: Topic create error >>> {e.Results[0].Error.Reason}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Beklenmeyen bir hata oluştu: {ex.Message}");
+            Console.WriteLine($"[ERROR]: Kafka error >>> {ex.Message}");
         }
         
     }

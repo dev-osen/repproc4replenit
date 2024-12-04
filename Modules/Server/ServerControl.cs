@@ -11,6 +11,9 @@ public static class ServerControl
     {
         try
         {
+            LoggerService.StartServer();
+            
+            
             Console.WriteLine($"[INFO]: Program started!");
             ProcessTaskService taskService = new ProcessTaskService();
             await taskService.Create(csvFilePath);
