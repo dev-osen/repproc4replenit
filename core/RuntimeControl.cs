@@ -1,9 +1,6 @@
-using System.Data;
 using System.Text.RegularExpressions;
 using DotNetEnv;
-using Microsoft.VisualBasic;
 using Npgsql;
-using RepProc4Replenit.Objects;
 
 namespace RepProc4Replenit.Core;
 
@@ -27,47 +24,55 @@ public static class RuntimeControl
     
     public static string WorkerChannelName { get; set; } 
     
+    
+    public static string ProgramMode { get; set; }
+    
 
-    public static async Task Load()
+    public static async Task Load(string programMode)
     {
+        ProgramMode = programMode;
+        
         Env.Load();
 
-        RuntimeControl.WorkerChannelName = Env.GetString("KAFKA_TASK_CHANNEL"); 
+        WorkerChannelName = Env.GetString("KAFKA_TASK_CHANNEL"); 
         
-        RuntimeControl.RedisPreData = new RedisClient(RedisDataTypesEnum.PreData); 
-        RuntimeControl.RedisCustomerProduct = new RedisClient(RedisDataTypesEnum.CustomerProduct);
-        RuntimeControl.RedisCustomerProductChecker = new RedisClient(RedisDataTypesEnum.CustomerProductChecker);
-        RuntimeControl.RedisTransaction = new RedisClient(RedisDataTypesEnum.Transaction);
-        RuntimeControl.RedisTransactionChecker = new RedisClient(RedisDataTypesEnum.TransactionChecker);
-        RuntimeControl.RedisTransactionWorker = new RedisClient(RedisDataTypesEnum.TransactionWorker);
-        RuntimeControl.RedisTransactionRaw = new RedisClient(RedisDataTypesEnum.TransactionRaw);
-        RuntimeControl.RedisProduct = new RedisClient(RedisDataTypesEnum.Product);
-        RuntimeControl.RedisProductList = new RedisClient(RedisDataTypesEnum.ProductList);
-        RuntimeControl.RedisTaskError = new RedisClient(RedisDataTypesEnum.TaskError);
-        RuntimeControl.RedisLog = new RedisClient(RedisDataTypesEnum.Log);
+        RedisPreData = new RedisClient(RedisDataTypesEnum.PreData); 
+        RedisCustomerProduct = new RedisClient(RedisDataTypesEnum.CustomerProduct);
+        RedisCustomerProductChecker = new RedisClient(RedisDataTypesEnum.CustomerProductChecker);
+        RedisTransaction = new RedisClient(RedisDataTypesEnum.Transaction);
+        RedisTransactionChecker = new RedisClient(RedisDataTypesEnum.TransactionChecker);
+        RedisTransactionWorker = new RedisClient(RedisDataTypesEnum.TransactionWorker);
+        RedisTransactionRaw = new RedisClient(RedisDataTypesEnum.TransactionRaw);
+        RedisProduct = new RedisClient(RedisDataTypesEnum.Product);
+        RedisProductList = new RedisClient(RedisDataTypesEnum.ProductList);
+        RedisTaskError = new RedisClient(RedisDataTypesEnum.TaskError);
+        RedisLog = new RedisClient(RedisDataTypesEnum.Log);
 
-        RuntimeControl.PostgreConnection = await PostgreClient.Connection();
+        PostgreConnection = await PostgreClient.Connection();
 
-        KafkaClient.TopicChecker(new List<string>() { RuntimeControl.WorkerChannelName }, 50).Wait();
+        KafkaClient.TopicChecker(new List<string>() { WorkerChannelName }, 50).Wait();
     }
 
 
 
     public static async Task ErrorLog(long taskId, Exception ex)
     {
-        string errorMessage = $"[MESSAGE]: {ex.Message}"; 
+        string errorMessage = $"[ERROR]: {ex.Message}"; 
         try
         { 
             if (!string.IsNullOrEmpty(ex.StackTrace))
             { 
                 var lineMatch = Regex.Match(ex.StackTrace, @":line (\d+)");
                 if (lineMatch.Success)
-                    errorMessage += $"/[LINE]: {lineMatch.Groups[1].Value}"; 
+                    errorMessage += $" / [LINE]: {lineMatch.Groups[1].Value}"; 
             }  
         }
         catch (Exception innerEx) {}
         
-        RuntimeControl.RedisTaskError.HashSetAsync(taskId.ToString(), DateTime.Now.ToString("u"), errorMessage).Wait();
+        RedisTaskError.HashSetAsync(taskId.ToString(), DateTime.Now.ToString("u"), errorMessage).Wait();
+
+        if (ProgramMode == "consumer")
+            await LoggerService.Send(errorMessage);
     }
     
     

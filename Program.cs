@@ -27,11 +27,11 @@ class Program
         
             Console.WriteLine($"\n\n\nRepProc4Replenit Program Started\n\n\n");
             Console.WriteLine($"[INFO]: Program Mode: {programMode}");
-        
-            RuntimeControl.Load().Wait();
-        
+
+            await RuntimeControl.Load(programMode);
+
             if (programMode.ToLower() == "server")
-                ServerControl.Run(args[1]).Wait();
+                await ServerControl.Run(args[1]);
         
             if (programMode.ToLower() == "consumer")
                 WorkerControl.Run();
