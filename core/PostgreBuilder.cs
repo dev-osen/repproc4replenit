@@ -4,7 +4,7 @@ namespace RepProc4Replenit.Core;
 
 public static class PostgreBuilder
 {
-    public static string GenerateTableQuery<T>() where T : class
+    public static string GenerateTableQuery<T>(string? indexKeyName = null) where T : class
     {
         var type = typeof(T);
         var tableName = type.Name + "s";
@@ -19,16 +19,17 @@ public static class PostgreBuilder
 
             if (columnName.Equals("Id", StringComparison.OrdinalIgnoreCase))
                 queryBuilder.AppendLine($"    {columnName} SERIAL PRIMARY KEY,");
-            else if (columnName.Equals("DbRowId", StringComparison.OrdinalIgnoreCase))
-                queryBuilder.AppendLine($"    {columnName} BIGINT UNIQUE NOT NULL,");
             else
                 queryBuilder.AppendLine($"    {columnName} {columnType} NOT NULL,");
         }
 
+        if(!string.IsNullOrEmpty(indexKeyName))
+            queryBuilder.AppendLine($"    {indexKeyName} BIGINT UNIQUE NOT NULL,");
+        
         queryBuilder.Length--;
         queryBuilder.AppendLine(");");
  
-        if (properties.Any(p => p.Name.Equals("DbRowId", StringComparison.OrdinalIgnoreCase)))
+        if(!string.IsNullOrEmpty(indexKeyName))
         {
             queryBuilder.AppendLine($@"
 DO $$
@@ -37,10 +38,10 @@ BEGIN
         SELECT 1
         FROM pg_class c
         JOIN pg_namespace n ON n.oid = c.relnamespace
-        WHERE c.relname = 'idx_{tableName.ToLower()}_dbrowid'
+        WHERE c.relname = 'idx_{tableName.ToLower()}_{indexKeyName}'
           AND n.nspname = 'public'
     ) THEN
-        CREATE INDEX idx_{tableName.ToLower()}_dbrowid ON {tableName} (DbRowId);
+        CREATE INDEX idx_{tableName.ToLower()}_{indexKeyName} ON {tableName} ({indexKeyName});
     END IF;
 END $$;
 ");

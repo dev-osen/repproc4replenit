@@ -66,7 +66,7 @@ public class CalculationWorker: IDisposable
                 foreach (string replenishmentInsertLine in ReplenishmentInsertLines)
                     replenishmentInsertLines.AppendLine(replenishmentInsertLine);
             
-                await ReplenishmentService.BulkInsertWithStringBuilder(replenishmentInsertLines);
+                await ReplenishmentService.BulkInsertWithStringBuilder(replenishmentInsertLines, "TransactionKey, CustProdKey, UserReferenceId, ProductId, TransactionDate, CalculatedDuration, ReplenishmentDate");
             }
 
             if (ReplenishmentUpdateLines.Count > 0)
@@ -75,7 +75,7 @@ public class CalculationWorker: IDisposable
                 foreach (string replenishmentUpdateLine in ReplenishmentUpdateLines)
                     replenishmentUpdateLines.AppendLine(replenishmentUpdateLine);
             
-                await ReplenishmentService.BulkUpdateWithStringBuilder(replenishmentUpdateLines);
+                await ReplenishmentService.BulkUpdateWithStringBuilder(replenishmentUpdateLines, "Id, TransactionKey, CustProdKey, UserReferenceId, ProductId, TransactionDate, CalculatedDuration, ReplenishmentDate");
             }
         }
         catch (AggregateException ex)
@@ -155,14 +155,13 @@ public class CalculationWorker: IDisposable
                 else
                     ReplenishmentUpdateLines.Add($"{lineId},{transactionKey},{custProdKey},{userReferenceId},{productId},{transactionDate},{calculatedDuration},{replenishmentDate}");
             }
+             
+            await RedisProductBatch.HashSetAsync($"{productId}:durations", custProdKey, calculatedDuration.ToString());
             
-            await RedisProductBatch.HashSetAsync(productId, custProdKey, calculatedDuration.ToString());
-            
-            string productKey = RuntimeControl.ProductItemKey(productId);
-            if (!(await RuntimeControl.RedisProductList.KeyExistsAsync(productKey)))
+            if (!(await RuntimeControl.RedisProductList.KeyExistsAsync($"{productId}:data")))
             {
-                await RedisProductListBatch.SetAddAsync(productKey, "0");   
-                await RedisProductListBatch.ListRightPushAsync(ProductKey, productId);    
+                await RedisProductListBatch.SetAddAsync($"{productId}:data", "0");   
+                await RedisProductBatch.ListRightPushAsync(ProductKey, productId);
             }
         }
     }

@@ -39,6 +39,12 @@ public static class ServerControl
             await taskService.UpdateStatus(TaskStatusesEnum.CalculationProcessing);
             long custProdCount = await RuntimeControl.RedisCustomerProduct.RedisDatabase.ListLengthAsync(RuntimeControl.CustomerProductKey());
             await TaskWorkerRunner.Run(taskId, unchecked((int)custProdCount), WorkerTypeEnum.CalculationWorker);
+            
+            
+            Console.WriteLine($"[INFO]: ProductProcessing started!");
+            await taskService.UpdateStatus(TaskStatusesEnum.ProductProcessing);
+            long productCount = await RuntimeControl.RedisProduct.RedisDatabase.ListLengthAsync(RuntimeControl.ProductKey());
+            await TaskWorkerRunner.Run(taskId, unchecked((int)productCount), WorkerTypeEnum.ProductWorker);
 
 
             if (await RuntimeControl.RedisTaskError.KeyExistsAsync(taskId.ToString()))

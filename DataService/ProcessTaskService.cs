@@ -29,5 +29,4 @@ public class ProcessTaskService: PostgreService<ProcessTask>
         this.CurrentTask.Status = (int)status;
         await UpdateAsync(this.CurrentTask, "TaskId", this.CurrentTask.TaskId);
     }
-    
 }

@@ -4,8 +4,4 @@ using RepProc4Replenit.Objects;
 
 namespace RepProc4Replenit.DataService;
 
-public class ReplenishmentService: PostgreService<Replenishment>
-{ 
-    
-    
-}
+public class ReplenishmentService: PostgreService<Replenishment> {}

@@ -56,6 +56,7 @@ public static class TaskWorkerRunner
             case WorkerTypeEnum.DataWorker: result = Env.GetInt("DATA_WORKER_MAX_LINE_COUNT"); break;
             case WorkerTypeEnum.FileWorker: result = Env.GetInt("FILE_WORKER_MAX_LINE_COUNT"); break;
             case WorkerTypeEnum.CalculationWorker: result = Env.GetInt("CALC_WORKER_MAX_LINE_COUNT"); break;
+            case WorkerTypeEnum.ProductWorker: result = Env.GetInt("PROD_WORKER_MAX_LINE_COUNT"); break;
         }
         return result;
     }

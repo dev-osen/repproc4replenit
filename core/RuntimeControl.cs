@@ -74,6 +74,5 @@ public static class RuntimeControl
     public static string CustomerProductKey() => $"customer-product"; 
     public static string TransactionKey(string UserReferenceId, string ProductId, string TransactionDate) => $"{UserReferenceId}.{ProductId}.{TransactionDate.Replace(" ", "")}";
     public static string CustProdKey(string UserReferenceId, string ProductId) => $"{UserReferenceId}.{ProductId}";
-    public static string ProductItemKey(string productId) => $"product.average.{productId}";
     public static string ProductKey() => $"products";
 }

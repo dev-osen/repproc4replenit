@@ -7,6 +7,7 @@ public enum TaskStatusesEnum
     DataCollection = 3,
     DataProcessing = 4,
     CalculationProcessing = 5,
-    CompletedWithSuccess = 6,
-    CompletedWithError = 7,
+    ProductProcessing = 6,
+    CompletedWithSuccess = 7,
+    CompletedWithError = 8,
 }

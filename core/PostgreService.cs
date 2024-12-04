@@ -14,13 +14,13 @@ public abstract class PostgreService<T> where T : class
     public string TableName { get; set; }
     
     
-    public PostgreService()
+    public PostgreService(string? indexKeyName = null)
     {
         this.ModelType = typeof(T);
         this.TableName = this.ModelType.Name + "s";
-        this.ModelProperties = this.ModelType.GetProperties().Where(p => p.Name != "Id");
+        this.ModelProperties = this.ModelType.GetProperties();
         
-        RuntimeControl.PostgreConnection.ExecuteAsync(PostgreBuilder.GenerateTableQuery<T>()).Wait();
+        RuntimeControl.PostgreConnection.ExecuteAsync(PostgreBuilder.GenerateTableQuery<T>(indexKeyName)).Wait();
     }
     
     
@@ -111,18 +111,14 @@ public abstract class PostgreService<T> where T : class
  
     
     
-    
-    
-    
-    public async Task BulkInsertWithStringBuilder(StringBuilder csvData)
-    { 
-        var properties = ModelProperties.Where(p => p.Name != "Id").ToList();
-        var copyCommand = $"COPY {TableName} ({string.Join(", ", properties.Select(p => p.Name))}) FROM STDIN (FORMAT csv, DELIMITER ',')";
+    public async Task BulkInsertWithStringBuilder(StringBuilder csvData, string fields)
+    {  
+        var copyCommand = $"COPY {TableName} ({fields}) FROM STDIN (FORMAT csv, DELIMITER ',')";
         await using (var writer = RuntimeControl.PostgreConnection.BeginTextImport(copyCommand))
             await writer.WriteAsync(csvData.ToString());
     }
     
-    public async Task BulkUpdateWithStringBuilder(StringBuilder csvData)
+    public async Task BulkUpdateWithStringBuilder(StringBuilder csvData, string fields)
     {  
         await using var transaction = await RuntimeControl.PostgreConnection.BeginTransactionAsync();
 
@@ -134,16 +130,14 @@ public abstract class PostgreService<T> where T : class
             await using (var createTableCommand = new NpgsqlCommand(createTempTableQuery, RuntimeControl.PostgreConnection, transaction))
                 await createTableCommand.ExecuteNonQueryAsync();
             
-            
-            var copyCommand = $"COPY {tempTableName} ({string.Join(", ", ModelProperties.Select(p => p.Name))}) FROM STDIN (FORMAT csv, DELIMITER ',')";
+            var copyCommand = $"COPY {tempTableName} ({fields}) FROM STDIN (FORMAT csv, DELIMITER ',')";
             await using (var writer = RuntimeControl.PostgreConnection.BeginTextImport(copyCommand))
                 await writer.WriteAsync(csvData.ToString());
-
-            var properties = ModelProperties.Where(p => p.Name != "Id").ToList();
+ 
             var updateQuery = $@"
                 UPDATE {this.TableName} AS mt
                 SET
-                    {string.Join(", ", properties.Select(p => $"{p.Name} = tt.{p.Name}"))}
+                    { string.Join(",", fields.Replace("Id,", "").Split(',').Select(p => $"{p}=tt.{p}"))}
                 FROM {tempTableName} AS tt
                 WHERE mt.Id = tt.Id;
             ";
@@ -159,8 +153,7 @@ public abstract class PostgreService<T> where T : class
             throw;
         }
     }
-    
-    
+     
     
     
     public string FormatValue(object? value)
