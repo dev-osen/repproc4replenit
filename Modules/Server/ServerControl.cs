@@ -1,72 +1,69 @@
-using System.Text.Json;
-using Confluent.Kafka;
-using RepProc4Replenit.Core;
-using RepProc4Replenit.DataModels;
+using RepProc4Replenit.Core; 
 using RepProc4Replenit.DataService;
-using RepProc4Replenit.Enums; 
-using RepProc4Replenit.Objects;
+using RepProc4Replenit.Enums;
+using StackExchange.Redis;
 
 namespace RepProc4Replenit.Modules.Server;
 
 public static class ServerControl
-{  
-    public static async Task RunWithFile(string csvFilePath)
+{
+    public static async Task Run(string csvFilePath)
     {
-        IProducer<Null, string> workerProducer = new ProducerBuilder<Null, string>(KafkaClient.ProducerConfig).Build();
-        
-        
-        ProcessTaskService taskService = new ProcessTaskService();
-        await taskService.Create(csvFilePath);
-        long taskId = taskService.CurrentTask.TaskId;
-        
-        
-        using CsvReader csvReader = new CsvReader(taskId, csvFilePath);
-        int lineCount = csvReader.Run();
-        
+        try
+        {
+            Console.WriteLine($"[INFO]: Program started!");
+            ProcessTaskService taskService = new ProcessTaskService();
+            await taskService.Create(csvFilePath);
+            long taskId = taskService.CurrentTask.TaskId;
+            
+            
+            Console.WriteLine($"[INFO]: DataCollection started!");
+            await taskService.UpdateStatus(TaskStatusesEnum.DataCollection);
+            ReplenishmentService replenishmentService = new ReplenishmentService();
+            int maxId = await replenishmentService.GetMaxId();
+            await TaskWorkerRunner.Run(taskId, maxId, WorkerTypeEnum.DataWorker);
+            
+            
+            Console.WriteLine($"[INFO]: FileReading started!");
+            await taskService.UpdateStatus(TaskStatusesEnum.FileReading);
+            using CsvDataReader csvDataReader = new CsvDataReader(taskId, csvFilePath);
+            int lineCount = csvDataReader.Run();
+             
+            
+            Console.WriteLine($"[INFO]: DataProcessing started!");
+            await taskService.UpdateStatus(TaskStatusesEnum.DataProcessing);
+            await TaskWorkerRunner.Run(taskId, lineCount, WorkerTypeEnum.FileWorker);
+            
+            
+            Console.WriteLine($"[INFO]: CalculationProcessing started!");
+            await taskService.UpdateStatus(TaskStatusesEnum.CalculationProcessing);
+            long custProdCount = await RuntimeControl.RedisCustomerProduct.RedisDatabase.ListLengthAsync(RuntimeControl.CustomerProductKey());
+            await TaskWorkerRunner.Run(taskId, unchecked((int)custProdCount), WorkerTypeEnum.CalculationWorker);
 
-        await taskService.UpdateStatus(TaskStatusesEnum.FileReady);
-        
-        
-        int taskCount = lineCount / RuntimeControl.WorkerMaxLineCount;
-        int lastTaskSize = 0;
-        if (lineCount % RuntimeControl.WorkerMaxLineCount > 0)
-        {
-            lastTaskSize = lineCount % RuntimeControl.WorkerMaxLineCount;
-            taskCount++;
-        }
-        
-        var produceTasks = new Task[taskCount];
-        for (int i = 0; i < taskCount - 1; i++)
-        {
-            string messageValue = JsonSerializer.Serialize(new WorkerTask(){ TaskId = taskId, PartIndex = i, PartSize = RuntimeControl.WorkerMaxLineCount, TaskType = (int)TaskTypeEnum.RunWithFile});
-            produceTasks[i] = workerProducer.ProduceAsync(RuntimeControl.WorkerChannelName, new Message<Null, string> { Value = messageValue })
-                .ContinueWith(task =>
-                {
-                    if (!task.IsCompletedSuccessfully) 
-                        Console.WriteLine($"Task Error: {task.Exception?.Message}");
-                });
-        }
-        
-        string extraMessage = JsonSerializer.Serialize(new WorkerTask(){ TaskId = taskId, PartIndex = taskCount - 1, PartSize = lastTaskSize, TaskType = (int)TaskTypeEnum.RunWithFile });
-        produceTasks[taskCount - 1] = workerProducer.ProduceAsync(RuntimeControl.WorkerChannelName, new Message<Null, string> { Value = extraMessage })
-            .ContinueWith(task =>
+
+            if (await RuntimeControl.RedisTaskError.KeyExistsAsync(taskId.ToString()))
             {
-                if (!task.IsCompletedSuccessfully) 
-                    Console.WriteLine($"Task Error: {task.Exception?.Message}");
-            });
-        
-        
-        await taskService.UpdateStatus(TaskStatusesEnum.Processing);
-        
-        await Task.WhenAll(produceTasks);
+                Console.WriteLine($"[INFO]: Program completed with error!");
+                await taskService.UpdateStatus(TaskStatusesEnum.CompletedWithError);
+                HashEntry[]? errors = await RuntimeControl.RedisTransaction.RedisDatabase.HashGetAllAsync(taskId.ToString());
+                if(errors?.Length > 0)
+                    foreach (HashEntry error in errors)
+                        Console.WriteLine($"[ERROR][{error.Name}]: {error.Value}");
+            }
+            else
+            {
+                Console.WriteLine($"[INFO]: Program completed successfully!");
+                await taskService.UpdateStatus(TaskStatusesEnum.CompletedWithSuccess);
+            }
+        }
+        catch (AggregateException ex)
+        {
+            foreach (var innerEx in ex.InnerExceptions)
+                Console.WriteLine(innerEx.Message);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
     }
-
-    public static void RunWithDb(string taskId)
-    {
-        
-    }
-    
-
-
-
 }

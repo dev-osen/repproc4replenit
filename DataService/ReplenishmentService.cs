@@ -1,9 +1,11 @@
 using RepProc4Replenit.Core;
 using RepProc4Replenit.DataModels;
+using RepProc4Replenit.Objects;
 
 namespace RepProc4Replenit.DataService;
 
-public class CombineService: PostgreService<Combine>
-{  
+public class ReplenishmentService: PostgreService<Replenishment>
+{ 
+    
     
 }

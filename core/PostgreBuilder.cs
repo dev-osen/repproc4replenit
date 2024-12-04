@@ -7,7 +7,7 @@ public static class PostgreBuilder
     public static string GenerateTableQuery<T>() where T : class
     {
         var type = typeof(T);
-        var tableName = type.Name;
+        var tableName = type.Name + "s";
         var properties = type.GetProperties();
 
         var queryBuilder = new StringBuilder();
@@ -48,6 +48,35 @@ END $$;
 
         return queryBuilder.ToString();
     }
+
+
+    public static string GenerateTempTableQuery<T>(string tableName) where T : class
+    {
+        var type = typeof(T); 
+        var properties = type.GetProperties();
+
+        var queryBuilder = new StringBuilder();
+        queryBuilder.AppendLine($"CREATE TABLE IF NOT EXISTS {tableName}_{DateTime.Now.Ticks} (");
+        foreach (var prop in properties)
+        {
+            var columnName = prop.Name;
+            var columnType = GetPostgreSqlType(prop.PropertyType);
+
+            if (columnName.Equals("Id", StringComparison.OrdinalIgnoreCase))
+                queryBuilder.AppendLine($"    {columnName} SERIAL PRIMARY KEY,");
+            else if (columnName.Equals("DbRowId", StringComparison.OrdinalIgnoreCase))
+                queryBuilder.AppendLine($"    {columnName} BIGINT UNIQUE NOT NULL,");
+            else
+                queryBuilder.AppendLine($"    {columnName} {columnType} NOT NULL,");
+        }
+
+        queryBuilder.Length--;
+        queryBuilder.AppendLine(");");
+        
+        return queryBuilder.ToString();
+    }
+    
+    
     
     
     public static string GenerateSelectQuery<T>(List<string>? columns = null, Dictionary<string, string>? conditions = null, string? orderBy = null, bool? orderByIsDesc = false, int? limit = null) where T : class

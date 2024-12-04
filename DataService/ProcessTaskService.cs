@@ -8,7 +8,6 @@ public class ProcessTaskService: PostgreService<ProcessTask>
 {
     public ProcessTask CurrentTask { get; set; }
     
-    
     public async Task<ProcessTask> Create(string filePath)
     { 
         ProcessTask task = new ProcessTask()
@@ -24,7 +23,6 @@ public class ProcessTaskService: PostgreService<ProcessTask>
         
         return task;
     }
-
 
     public async Task UpdateStatus(TaskStatusesEnum status)
     {

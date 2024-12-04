@@ -4,8 +4,6 @@ using RepProc4Replenit.DataModels;
 namespace RepProc4Replenit.DataService;
 
 public class ProductService: PostgreService<Product>
-{ 
-    public ProductService()
-    { 
-    }
+{
+    
 }

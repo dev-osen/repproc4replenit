@@ -30,16 +30,25 @@ public static class WorkerControl
             {
                 var result = consumer.Consume(cts.Token);
                 
-                WorkerTask workerTask = JsonSerializer.Deserialize<WorkerTask>(result.Message.Value);
-
-                if (workerTask.TaskType == (int)TaskTypeEnum.RunWithFile)
+                TaskWorker? taskWorker = JsonSerializer.Deserialize<TaskWorker>(result.Message.Value);
+                
+                if (taskWorker?.WorkerType == (int)WorkerTypeEnum.DataWorker)
                 {
-                    WorkerFileProcessor fileWorker = new WorkerFileProcessor();
-                    fileWorker.Run(workerTask).Wait();
+                    using DataWorker fileFileWorker = new DataWorker();
+                    fileFileWorker.Run(taskWorker).Wait();
                 }
-                    
-                if(workerTask.TaskType == (int)TaskTypeEnum.RunWithDb)
-                    WorkerControl.RunWithDb(workerTask).Wait();
+                
+                if (taskWorker?.WorkerType == (int)WorkerTypeEnum.FileWorker)
+                {
+                    using FileWorker fileFileWorker = new FileWorker();
+                    fileFileWorker.Run(taskWorker).Wait();
+                }
+                
+                if (taskWorker?.WorkerType == (int)WorkerTypeEnum.CalculationWorker)
+                {
+                    using CalculationWorker fileFileWorker = new CalculationWorker();
+                    fileFileWorker.Run(taskWorker).Wait();
+                }
             }
         }
         catch (Exception e)
@@ -51,14 +60,6 @@ public static class WorkerControl
             consumer.Close();  
             Console.WriteLine("Consumer stopped!");
         }
-    }
-
-   
-
-    public static async Task RunWithDb(WorkerTask workerTask)
-    {
-        
-    }
-    
+    } 
     
 }

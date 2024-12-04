@@ -1,4 +1,6 @@
+using System.Data;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Dapper;
 using Npgsql;
@@ -22,27 +24,68 @@ public abstract class PostgreService<T> where T : class
     }
     
     
+    public async Task<int> GetMaxId()
+    { 
+        var query = $"SELECT MAX(Id) FROM {this.TableName};";
+        await using var command = new NpgsqlCommand(query, RuntimeControl.PostgreConnection);
+        var result = await command.ExecuteScalarAsync();
+        return result == DBNull.Value ? 0 : Convert.ToInt32(result);
+    }
     
-    public async Task<IEnumerable<T>> GetData(long DbRowId, int pageSize)
+    
+    public async Task<List<T>> LoadDataModelRange(int startId, int endId, Func<IDataReader, T> mapFunction)
     {
-        var query = PostgreBuilder.GenerateSelectQuery<T>(
-                conditions: new Dictionary<string, string> { { "Id", "> @DbRowId" } },
-                orderBy: "DbRowId",
-                limit: pageSize
-            );
- 
-        return await RuntimeControl.PostgreConnection.QueryAsync<T>(query, new { DbRowId = DbRowId });
-    }
+        List<T> results = new List<T>();
 
-    public async Task<T?> GetLast()
-    {
-        var query = PostgreBuilder.GenerateSelectQuery<T>( 
-            orderBy: "Id",
-            orderByIsDesc: true
+        NpgsqlCommand command = new NpgsqlCommand(
+            $"SELECT * FROM {this.TableName} WHERE Id BETWEEN @startId AND @endId",
+            RuntimeControl.PostgreConnection
         );
-        
-        return await RuntimeControl.PostgreConnection.QuerySingleOrDefaultAsync<T>(query);
+        command.Parameters.AddWithValue("@startId", startId);
+        command.Parameters.AddWithValue("@endId", endId);
+
+        using (var reader = await command.ExecuteReaderAsync())
+            while (await reader.ReadAsync())
+                results.Add(mapFunction(reader));
+
+        return results;
     }
+    
+    
+    public async Task<List<string>> LoadDataCsvRange(int startId, int endId, Func<IDataReader, string> mapFunction)
+    {
+        List<string> results = new List<string>();
+
+        NpgsqlCommand command = new NpgsqlCommand(
+            $"SELECT * FROM {this.TableName} WHERE Id BETWEEN @startId AND @endId",
+            RuntimeControl.PostgreConnection
+        );
+        command.Parameters.AddWithValue("@startId", startId);
+        command.Parameters.AddWithValue("@endId", endId);
+
+        using (var reader = await command.ExecuteReaderAsync())
+            while (await reader.ReadAsync())
+                results.Add(mapFunction(reader));
+
+        return results;
+    }
+    
+    
+    public async Task TransferDataRange(int startId, int endId, Func<IDataReader, string> transferFunction)
+    { 
+        NpgsqlCommand command = new NpgsqlCommand(
+            $"SELECT * FROM {this.TableName} WHERE Id BETWEEN @startId AND @endId",
+            RuntimeControl.PostgreConnection
+        );
+        command.Parameters.AddWithValue("@startId", startId);
+        command.Parameters.AddWithValue("@endId", endId);
+
+        using (var reader = await command.ExecuteReaderAsync())
+            while (await reader.ReadAsync())
+                transferFunction(reader);
+    }
+    
+    
  
     public async Task InsertAsync(T entity)
     { 
@@ -54,8 +97,6 @@ public abstract class PostgreService<T> where T : class
 
         await RuntimeControl.PostgreConnection.ExecuteAsync(sql, entity);
     }
-
- 
     public async Task UpdateAsync(T entity, string keyColumnName, object keyValue)
     { 
         var properties = ModelProperties.Where(p => p.Name != "Id");
@@ -69,31 +110,57 @@ public abstract class PostgreService<T> where T : class
     }
  
     
-    public async Task BulkInsertAsync(IEnumerable<T> entities)
+    
+    
+    
+    
+    public async Task BulkInsertWithStringBuilder(StringBuilder csvData)
     { 
         var properties = ModelProperties.Where(p => p.Name != "Id").ToList();
-        var csvData = new StringBuilder();
-
-        foreach (var entity in entities)
-        {
-            var values = properties.Select(p => FormatValue(p.GetValue(entity)));
-            csvData.AppendLine(string.Join("\t", values));
-        }
- 
-        var copyCommand = $"COPY {TableName} ({string.Join(", ", properties.Select(p => p.Name))}) FROM STDIN (FORMAT csv, DELIMITER '\t')";
-        await using var writer = RuntimeControl.PostgreConnection.BeginBinaryImport(copyCommand);
-        foreach (var entity in entities)
-        {
-             writer.StartRow();
-            foreach (var property in properties)
-            {
-                var value = property.GetValue(entity);
-                writer.Write(value ?? DBNull.Value, GetNpgsqlDbType(property.PropertyType));
-            }
-        }
-
-        await writer.CompleteAsync();
+        var copyCommand = $"COPY {TableName} ({string.Join(", ", properties.Select(p => p.Name))}) FROM STDIN (FORMAT csv, DELIMITER ',')";
+        await using (var writer = RuntimeControl.PostgreConnection.BeginTextImport(copyCommand))
+            await writer.WriteAsync(csvData.ToString());
     }
+    
+    public async Task BulkUpdateWithStringBuilder(StringBuilder csvData)
+    {  
+        await using var transaction = await RuntimeControl.PostgreConnection.BeginTransactionAsync();
+
+        try
+        {  
+            string tempTableName = this.TableName + "_" + DateTime.Now.Ticks.ToString();
+            var createTempTableQuery = PostgreBuilder.GenerateTempTableQuery<T>(tempTableName);
+
+            await using (var createTableCommand = new NpgsqlCommand(createTempTableQuery, RuntimeControl.PostgreConnection, transaction))
+                await createTableCommand.ExecuteNonQueryAsync();
+            
+            
+            var copyCommand = $"COPY {tempTableName} ({string.Join(", ", ModelProperties.Select(p => p.Name))}) FROM STDIN (FORMAT csv, DELIMITER ',')";
+            await using (var writer = RuntimeControl.PostgreConnection.BeginTextImport(copyCommand))
+                await writer.WriteAsync(csvData.ToString());
+
+            var properties = ModelProperties.Where(p => p.Name != "Id").ToList();
+            var updateQuery = $@"
+                UPDATE {this.TableName} AS mt
+                SET
+                    {string.Join(", ", properties.Select(p => $"{p.Name} = tt.{p.Name}"))}
+                FROM {tempTableName} AS tt
+                WHERE mt.Id = tt.Id;
+            ";
+
+            await using (var updateCommand = new NpgsqlCommand(updateQuery, RuntimeControl.PostgreConnection, transaction))
+                await updateCommand.ExecuteNonQueryAsync();
+            
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+    
+    
     
     
     public string FormatValue(object? value)

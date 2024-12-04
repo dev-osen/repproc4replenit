@@ -8,7 +8,7 @@ using StackExchange.Redis;
 
 namespace RepProc4Replenit.Modules.Server;
 
-public class CsvReader: IDisposable
+public class CsvDataReader: IDisposable
 {
     public ConcurrentBag<FileBufferPart> FileBufferParts { get; } = new();
     public MemoryMappedFile MemoryMappedFile { get; set; }
@@ -19,14 +19,14 @@ public class CsvReader: IDisposable
     
     
     
-    public CsvReader(long taskId, string csvFilePath, int chunkSizeInMb = 10)
+    public CsvDataReader(long taskId, string csvFilePath, int chunkSizeInMb = 10)
     {
         this.TaskId = taskId;
         this.CsvFilePath = csvFilePath; 
         this.ChunkSizeInMb = chunkSizeInMb;
     }
     
-    ~CsvReader() => this.Dispose();
+    ~CsvDataReader() => this.Dispose();
 
     public void Dispose()
     {

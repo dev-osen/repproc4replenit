@@ -10,10 +10,15 @@ namespace RepProc4Replenit.Core;
 public enum RedisDataTypesEnum
 {
     PreData = 1,
-    Product = 2,
-    Customer = 3,
-    Combine = 4,
-    DataKey = 5,
+    CustomerProduct = 2,
+    CustomerProductChecker = 3,
+    Transaction = 4,
+    TransactionChecker = 5,
+    TransactionWorker = 6,
+    TransactionRaw = 7,
+    Product = 8,
+    ProductList = 9,
+    TaskError = 10
 }
 
 public class RedisClient : IDisposable
