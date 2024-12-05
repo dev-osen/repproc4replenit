@@ -20,7 +20,10 @@ public static class TaskWorkerRunner
             lastTaskSize = lineCount % maxLineCount;
             workerCount++;
         }
-        
+ 
+        if (workerCount <= 0)
+            return;
+         
         Task[] produceTasks = new Task[workerCount];
         for (int i = 0; i < workerCount - 1; i++)
         {
@@ -31,13 +34,14 @@ public static class TaskWorkerRunner
                         Console.WriteLine($"Task Error: {task.Exception?.Message}");
                 });
         }
- 
-        produceTasks[workerCount - 1] = RabbitClient.ProduceAsync(new TaskWorker(){ TaskId = taskId, PartIndex = workerCount - 1, PartSize = lastTaskSize, WorkerType = (int)workerType })
-            .ContinueWith(task =>
-            {
-                if (!task.IsCompletedSuccessfully) 
-                    Console.WriteLine($"Task Error: {task.Exception?.Message}");
-            });
+        
+        if(lastTaskSize > 0)
+            produceTasks[workerCount - 1] = RabbitClient.ProduceAsync(new TaskWorker(){ TaskId = taskId, PartIndex = workerCount - 1, PartSize = lastTaskSize, WorkerType = (int)workerType })
+                .ContinueWith(task =>
+                {
+                    if (!task.IsCompletedSuccessfully) 
+                        Console.WriteLine($"Task Error: {task.Exception?.Message}");
+                });
         
         await Task.WhenAll(produceTasks);
         

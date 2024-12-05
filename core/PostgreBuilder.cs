@@ -12,21 +12,27 @@ public static class PostgreBuilder
 
         var queryBuilder = new StringBuilder();
         queryBuilder.AppendLine($"CREATE TABLE IF NOT EXISTS {tableName} (");
-        foreach (var prop in properties)
+        for (int i = 0; i < properties.Length; i++)
         {
+            var prop = properties[i];
             var columnName = prop.Name;
             var columnType = GetPostgreSqlType(prop.PropertyType);
+            string column = "";
 
             if (columnName.Equals("Id", StringComparison.OrdinalIgnoreCase))
-                queryBuilder.AppendLine($"    {columnName} SERIAL PRIMARY KEY,");
+                column = $"    {columnName} SERIAL PRIMARY KEY";
             else
-                queryBuilder.AppendLine($"    {columnName} {columnType} NOT NULL,");
+                column = $"    {columnName} {columnType} NOT NULL";
+            
+            if(i != properties.Length - 1)
+                column += ",";
+            
+            queryBuilder.AppendLine(column);
         }
 
         if(!string.IsNullOrEmpty(indexKeyName))
-            queryBuilder.AppendLine($"    {indexKeyName} BIGINT UNIQUE NOT NULL,");
-        
-        queryBuilder.Length--;
+            queryBuilder.AppendLine($",    {indexKeyName} BIGINT UNIQUE NOT NULL");
+         
         queryBuilder.AppendLine(");");
  
         if(!string.IsNullOrEmpty(indexKeyName))

@@ -38,6 +38,7 @@ public class CsvDataReader: IDisposable
     {
         this.MemoryMappedFile = MemoryMappedFile.CreateFromFile(this.CsvFilePath, FileMode.Open);
         this.SplitChunks();
+ 
         Parallel.ForEach(this.FileBufferParts, chunk =>  this.ProcessChunk(chunk));
 
         return FileBufferParts.Sum(t => t.LineCount);
@@ -50,12 +51,12 @@ public class CsvDataReader: IDisposable
         long chunkSize = this.ChunkSizeInMb * 1024 * 1024;
  
         int index = 0;
-        long currentStart = 0;
-        while (currentStart < totalSize)
+        long currentSize = 0;
+        while (currentSize < totalSize)
         {
-            long currentEnd = Math.Min(currentStart + chunkSize, totalSize - 1);
-            this.FileBufferParts.Add(new FileBufferPart(){ Start = currentStart, End = currentEnd, Index = index, ChunkSize = currentEnd - currentStart + 1});
-            currentStart = currentEnd + 1;
+            long currentEnd = Math.Min(currentSize + chunkSize, totalSize - 1);
+            this.FileBufferParts.Add(new FileBufferPart(){ Start = currentSize, End = currentEnd, Index = index, ChunkSize = currentEnd - currentSize + 1});
+            currentSize = currentEnd + 1;
             index++;
         }
     }

@@ -11,22 +11,16 @@ class Program
         try
         {
             if (args.Length < 1)
-            {
-                Console.WriteLine("[ERROR]: Mode not specified!");
-                return;
-            }
+                throw new Exception("Mode not specified!"); 
  
             string programMode = args[0];
-        
-            if (programMode.ToLower() == "server" && args.Length < 2)
-            {
-                Console.WriteLine("[ERROR]: Csv file not specified!");
-                return;
-            }
-        
-        
+
+            if ((programMode.ToLower() == "server" || programMode.ToLower() == "dualmode") && args.Length < 2)
+                throw new Exception("Csv file not specified!");
+            
             Console.WriteLine($"\n\n\nRepProc4Replenit Program Started\n\n\n");
             Console.WriteLine($"[INFO]: Program Mode: {programMode}");
+            
 
             Console.CancelKeyPress += (sender, eventArgs) =>
             { 
