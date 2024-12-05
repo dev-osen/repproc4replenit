@@ -8,7 +8,7 @@ public static class LoggerService
     {
         Task.Run(async () =>
         {
-            ISubscriber subscriber = RuntimeControl.RedisLog.RedisConnection.GetSubscriber();
+            ISubscriber subscriber = RedisConn.Connection.GetSubscriber();
             await subscriber.SubscribeAsync("logs", (channel, message) =>
             {
                 Console.WriteLine(message);
@@ -24,7 +24,7 @@ public static class LoggerService
     public static void StartConsumer(string consumerKey)
     {
         ConsumerKey = consumerKey;
-        LogSender = RuntimeControl.RedisLog.RedisConnection.GetSubscriber();
+        LogSender = RedisConn.Connection.GetSubscriber();
     } 
     public static async Task Send(string log) => await LogSender.PublishAsync("logs", $"[{ConsumerKey}]: {log}");
     

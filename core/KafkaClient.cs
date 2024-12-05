@@ -9,7 +9,7 @@ public static class KafkaClient
     public static ProducerConfig ProducerConfig =>
         new ProducerConfig
         {
-            BootstrapServers = $"{Env.GetString("KAFKA_HOST")}:{Env.GetString("KAFKA_PORT")}"
+            BootstrapServers = $"{Env.GetString("KAFKA_HOST")}:{Env.GetString("KAFKA_PORT")}", 
         };
     
     public static ConsumerConfig ConsumerConfig() => 
@@ -17,12 +17,12 @@ public static class KafkaClient
         {
             BootstrapServers = $"{Env.GetString("KAFKA_HOST")}:{Env.GetString("KAFKA_PORT")}",
             GroupId = $"task-worker-{DateTime.Now.Ticks}", 
-            AutoOffsetReset = AutoOffsetReset.Earliest
+            AutoOffsetReset = AutoOffsetReset.Earliest, 
         };
     
     public static AdminClientConfig AdminClientConfig => new AdminClientConfig
     {
-        BootstrapServers = $"{Env.GetString("KAFKA_HOST")}:{Env.GetString("KAFKA_PORT")}",
+        BootstrapServers = $"{Env.GetString("KAFKA_HOST")}:{Env.GetString("KAFKA_PORT")}", 
     };
 
 

@@ -82,7 +82,7 @@ public class CsvDataReader: IDisposable
         IBatch redisBatch = RuntimeControl.RedisPreData.RedisDatabase.CreateBatch();
         foreach (string line in lines)
         { 
-            if (chunk.Index > 0 && line == lines.First())
+            if (line == lines.First())
                 continue;
           
             lineTrim = line.Trim();

@@ -18,23 +18,24 @@ public static class RuntimeControl
     public static RedisClient RedisTaskError { get; set; }
     public static RedisClient RedisLog { get; set; }
     
-    
     public static NpgsqlConnection PostgreConnection { get; set; }
-    
     
     public static string WorkerChannelName { get; set; } 
     
-    
     public static string ProgramMode { get; set; }
     
+    public static CancellationTokenSource ProgramCancellation = new CancellationTokenSource(); 
+    
 
-    public static async Task Load(string programMode)
+    public static async Task Start(string programMode)
     {
         ProgramMode = programMode;
         
         Env.Load();
 
         WorkerChannelName = Env.GetString("KAFKA_TASK_CHANNEL"); 
+        
+        await RedisConn.Connect();
         
         RedisPreData = new RedisClient(RedisDataTypesEnum.PreData); 
         RedisCustomerProduct = new RedisClient(RedisDataTypesEnum.CustomerProduct);
@@ -49,12 +50,14 @@ public static class RuntimeControl
         RedisLog = new RedisClient(RedisDataTypesEnum.Log);
 
         PostgreConnection = await PostgreClient.Connection();
+        
+        RabbitClient.Connect();
 
-        KafkaClient.TopicChecker(new List<string>() { WorkerChannelName }, 50).Wait();
+        // Sunucu problemlerinden dolayi iptal edildi
+        // KafkaClient.TopicChecker(new List<string>() { WorkerChannelName }, 5).Wait();
     }
-
-
-
+ 
+     
     public static async Task ErrorLog(long taskId, Exception ex)
     {
         string errorMessage = $"[ERROR]: {ex.Message}"; 

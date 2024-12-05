@@ -13,30 +13,26 @@ public static class TaskWorkerRunner
     { 
         int maxLineCount = MaxLineCount(workerType);
         
-        IProducer<Null, string> workerProducer = new ProducerBuilder<Null, string>(KafkaClient.ProducerConfig).Build();
-        
-        int taskCount = lineCount / maxLineCount;
+        int workerCount = lineCount / maxLineCount;
         int lastTaskSize = 0;
         if (lineCount % maxLineCount > 0)
         {
             lastTaskSize = lineCount % maxLineCount;
-            taskCount++;
+            workerCount++;
         }
         
-        Task[] produceTasks = new Task[taskCount];
-        for (int i = 0; i < taskCount - 1; i++)
+        Task[] produceTasks = new Task[workerCount];
+        for (int i = 0; i < workerCount - 1; i++)
         {
-            string messageValue = JsonSerializer.Serialize(new Objects.TaskWorker(){ TaskId = taskId, PartIndex = i, PartSize = maxLineCount, WorkerType = (int)workerType });
-            produceTasks[i] = workerProducer.ProduceAsync(RuntimeControl.WorkerChannelName, new Message<Null, string> { Value = messageValue })
+            produceTasks[i] = RabbitClient.ProduceAsync(new TaskWorker(){ TaskId = taskId, PartIndex = i, PartSize = maxLineCount, WorkerType = (int)workerType })
                 .ContinueWith(task =>
                 {
-                    if (!task.IsCompletedSuccessfully) 
+                    if (!task.IsCompletedSuccessfully)
                         Console.WriteLine($"Task Error: {task.Exception?.Message}");
                 });
         }
-        
-        string extraMessage = JsonSerializer.Serialize(new Objects.TaskWorker(){ TaskId = taskId, PartIndex = taskCount - 1, PartSize = lastTaskSize, WorkerType = (int)workerType });
-        produceTasks[taskCount - 1] = workerProducer.ProduceAsync(RuntimeControl.WorkerChannelName, new Message<Null, string> { Value = extraMessage })
+ 
+        produceTasks[workerCount - 1] = RabbitClient.ProduceAsync(new TaskWorker(){ TaskId = taskId, PartIndex = workerCount - 1, PartSize = lastTaskSize, WorkerType = (int)workerType })
             .ContinueWith(task =>
             {
                 if (!task.IsCompletedSuccessfully) 

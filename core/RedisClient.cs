@@ -19,22 +19,32 @@ public enum RedisDataTypesEnum
     Log = 11,
 }
 
-public class RedisClient : IDisposable
-{
-    public readonly ConnectionMultiplexer RedisConnection;
-    public readonly IDatabase RedisDatabase;
 
-    public RedisClient(RedisDataTypesEnum redisType)
-    { 
+public static class RedisConn
+{
+    public static ConnectionMultiplexer Connection { get; set; }
+
+    public static async Task Connect()
+    {
         string host = Env.GetString("REDIS_HOST");
         string port = Env.GetString("REDIS_PORT");
-        string password = Env.GetString("REDIS_PASSWORD");
-        int database = (int)redisType;
+        string password = Env.GetString("REDIS_PASS");
 
-        var connectionString = $"{host}:{port},password={password}";
+        string connectionString = $"{host}:{port},password={password}";
+        
+        Connection = await ConnectionMultiplexer.ConnectAsync(connectionString);
+    }
+}
 
-        RedisConnection = ConnectionMultiplexer.Connect(connectionString);
-        RedisDatabase = RedisConnection.GetDatabase(database);
+
+
+public class RedisClient : IDisposable
+{
+    
+    public readonly IDatabase RedisDatabase;
+    public RedisClient(RedisDataTypesEnum redisType)
+    {  
+        RedisDatabase = RedisConn.Connection.GetDatabase((int)redisType);
     }
     
     public async Task<bool> KeyExistsAsync(string key) => await RedisDatabase.KeyExistsAsync(key);
@@ -52,7 +62,7 @@ public class RedisClient : IDisposable
     
     public IEnumerable<string> GetKeys(string pattern = "*")
     {
-        var server = RedisConnection.GetServer(RedisConnection.GetEndPoints()[0]);
+        var server = RedisConn.Connection.GetServer(RedisConn.Connection.GetEndPoints()[0]);
         foreach (var key in server.Keys(pattern: pattern))
         {
             yield return key.ToString();
@@ -114,8 +124,8 @@ public class RedisClient : IDisposable
 
     public void Dispose()
     {
-        if(RedisConnection?.IsConnected ?? false)
-            RedisConnection?.Dispose();
+        // if(RedisConn.Connection?.IsConnected ?? false)
+        //     RedisConn.Connection?.Dispose();
             
         GC.SuppressFinalize(this);
     }

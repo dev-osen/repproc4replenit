@@ -13,7 +13,6 @@
         "packagesPath": "/Users/OzerSengezer/.nuget/packages/",
         "outputPath": "/Volumes/External/Projects/NetCore/RepProc4Replenit/obj/",
         "projectStyle": "PackageReference",
-        "UsingMicrosoftNETSdk": false,
         "configFilePaths": [
           "/Users/OzerSengezer/.nuget/NuGet/NuGet.Config"
         ],
@@ -38,12 +37,17 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "all"
-        }
+        },
+        "SdkAnalysisLevel": "9.0.100"
       },
       "frameworks": {
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
+            "Aspire.RabbitMQ.Client": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            },
             "Confluent.Kafka": {
               "target": "Package",
               "version": "[2.6.1, )"

@@ -14,28 +14,14 @@ public static class WorkerControl
 { 
     public static string ConsumerKey = Guid.NewGuid().ToString("N");
     
-    public static void Run()
+    public static async Task Run()
     { 
         LoggerService.StartConsumer(ConsumerKey);
         
-        var cts = new CancellationTokenSource(); 
-        Console.CancelKeyPress += (sender, eventArgs) =>
-        { 
-            cts.Cancel();
-            eventArgs.Cancel = true;
-        };
-        
-        using var consumer = new ConsumerBuilder<Null, string>(KafkaClient.ConsumerConfig()).Build();
-        consumer.Subscribe(RuntimeControl.WorkerChannelName);
-        
         try
         {
-            while (!cts.Token.IsCancellationRequested)
+            RabbitClient.Consume<TaskWorker>(taskWorker =>
             {
-                var result = consumer.Consume(cts.Token);
-                
-                TaskWorker? taskWorker = JsonSerializer.Deserialize<TaskWorker>(result.Message.Value);
-                
                 if (taskWorker?.WorkerType == (int)WorkerTypeEnum.DataWorker)
                 {
                     using DataWorker fileFileWorker = new DataWorker();
@@ -53,15 +39,18 @@ public static class WorkerControl
                     using CalculationWorker fileFileWorker = new CalculationWorker();
                     fileFileWorker.Run(taskWorker).Wait();
                 }
-            }
+                
+            }, RuntimeControl.ProgramCancellation.Token);
+            
+            await Task.Delay(Timeout.Infinite, RuntimeControl.ProgramCancellation.Token);
         }
+        catch (TaskCanceledException tce){}
         catch (Exception e)
         {
             LoggerService.Send($"Consumer error: {e.Message}");
         }
         finally
-        {
-            consumer.Close();  
+        { 
             LoggerService.Send("Consumer stopped!");
         }
     } 

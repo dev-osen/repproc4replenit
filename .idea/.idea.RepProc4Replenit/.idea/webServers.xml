@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="61ec3e30-0755-4d6b-b62c-407762e04535" name="serv.toarray.net">
+        <fileTransfer rootFolder="/var/projects/others/repproc4replenit" accessType="SFTP" host="serv.toarray.net" port="22" sshConfigId="ea3b9e05-5759-4c39-933b-53b3955d30ea" sshConfig="root@serv.toarray.net:22 key" keyPair="true">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" keepAliveTimeout="0" passiveMode="true" shareSSLContext="true" isUseRsync="true" isUseSudo="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
